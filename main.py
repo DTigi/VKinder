@@ -26,4 +26,4 @@ for event in longpoll.listen():
             else:
                 write_msg(event.user_id, "Не поняла вашего ответа...")
 
-print('test commit')
+print('test commit2')
