@@ -1,7 +1,6 @@
 from vk_api.longpoll import VkLongPoll, VkEventType
 
-from main import user, insert_found_user_info, insert_viewed_user_info, write_msg, send_user_info, longpoll
-from users_db import delete_tables
+from main import user, write_msg, send_user_info, longpoll
 
 
 def event_handler(user_id):
@@ -11,9 +10,6 @@ def event_handler(user_id):
             if event.to_me:
                 request = event.text
                 if request == "старт":
-                    delete_tables()
-                    insert_found_user_info(user)
-                    insert_viewed_user_info(user)
                     write_msg(event.user_id, f"Бот запущен. Хочешь найти себе пару, {event.user_id}? да/нет")
 
                     for event in longpoll.listen():

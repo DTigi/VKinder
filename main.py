@@ -1,10 +1,11 @@
+from pprint import pprint
 from random import randrange
 import datetime
 import requests
 import vk_api
 from vk_api.longpoll import VkLongPoll
 from config import user_token, community_token
-from users_db import insert_users, insert_viewed_users, user_selection, update_viewed_users, drop_table
+from users_db import count_of_viewed_users, insert_viewed_users
 
 
 
@@ -20,8 +21,6 @@ def write_msg(user_id, message):
     vk.method('messages.send', {'user_id': user_id, 'message': message, 'random_id': randrange(10 ** 7)})
 
 
-
-
 def get_profile_info(user_id):
     """Получение информации о пользователе, который написал боту"""
     url = 'https://api.vk.com/method/users.get'
@@ -33,16 +32,28 @@ def get_profile_info(user_id):
     resp = requests.get(url, params=params)
     response = resp.json()
     birthdate = response['response'][0]['bdate']
+    try:
+        birthdate
+    except KeyError:
+        write_msg(user_id, 'Отсутствует информация о дате рождения, заполните профиль')
     birthyear = int(birthdate[-4:])
     year_now = int(datetime.date.today().year)
     target_age = year_now - birthyear
-
     sex = response['response'][0]['sex']
+    try:
+        sex
+    except KeyError:
+        write_msg(user_id, 'Отсутствует пол, заполните профиль')
     if sex == 1:
         target_sex = 2
     else:
         target_sex = 1
     city_id = response['response'][0]['city']['id']
+    try:
+        city_id
+    except KeyError:
+        write_msg(user_id, 'Отсутствует информация о городе проживания, заполните профиль')
+
     return target_age, target_sex, city_id
 
 
@@ -57,14 +68,16 @@ def find_user(user_id):
               'city_id': get_profile_info(user_id)[2],
               'status': '1' or '6' or '0',
               'count': 50}
-    resp = requests.get(url, params=params)
-    response = resp.json()
+    try:
+        resp = requests.get(url, params=params)
+        response = resp.json()
+        return response
+    except KeyError:
+        write_msg(user_id, 'проверь токен пользователя')
 
-    return response
-
-
-def insert_found_user_info(user_id):
-    '''Заполнение таблицы найденных пользователей'''
+def found_user_info_list(user_id):
+    '''Формирование списка найденных пользователей'''
+    users_list = []
     dict_1 = find_user(user_id)['response']
     list_1 = dict_1['items']
     for person_dict in list_1:
@@ -73,24 +86,16 @@ def insert_found_user_info(user_id):
             last_name = person_dict.get('last_name')
             vk_id = str(person_dict.get('id'))
             vk_link = 'vk.com/id' + str(person_dict.get('id'))
-            insert_users(first_name, last_name, vk_id, vk_link)
+            users_list.append([first_name, last_name, vk_id, vk_link])
         else:
             continue
+    return users_list
 
 
-def insert_viewed_user_info(user_id):
-    '''Заполнение таблицы просмотренных пользователей'''
-    dict_1 = find_user(user_id)['response']
-    list_1 = dict_1['items']
-    for person_dict in list_1:
-        if person_dict.get('is_closed') == False:
-            # first_name = person_dict.get('first_name')
-            # last_name = person_dict.get('last_name')
-            vk_id = str(person_dict.get('id'))
-            # vk_link = 'vk.com/id' + str(person_dict.get('id'))
-            insert_viewed_users(vk_id)
-        else:
-            continue
+def find_user_info(user_id):
+    '''Вывод информации о найденном пользователе'''
+    user_info = found_user_info_list(user_id)[count_of_viewed_users()]
+    return user_info
 
 
 def get_photos_id(user_id):
@@ -126,29 +131,20 @@ def get_photo(user_id):
     return list_of_ids
 
 
-def find_user_info():
-    """Вывод информации о найденном пользователе"""
-    list_user = user_selection()
-    list_users = []
-    for item in list_user:
-        list_users.append(item)
-    return str(list_users[0]).split(', ')
-
-
 def send_photo(user_id, message):
     """Отправка трех самых популярных фотографий"""
     vk.method('messages.send', {'user_id': user_id,
                                 'access_token': user_token,
                                 'message': message,
-                                'attachment': f'photo{find_user_info()[2]}_{get_photo(find_user_info()[2])[0]},photo{find_user_info()[2]}_{get_photo(find_user_info()[2])[1]},photo{find_user_info()[2]}_{get_photo(find_user_info()[2])[2]}',
+                                'attachment': f'photo{find_user_info(user_id)[2]}_{get_photo(find_user_info(user_id)[2])[0]},photo{find_user_info(user_id)[2]}_{get_photo(find_user_info(user_id)[2])[1]},photo{find_user_info(user_id)[2]}_{get_photo(find_user_info(user_id)[2])[2]}',
                                 'random_id': randrange(10 ** 7)})
 
 
 def send_user_info(user_id):
     """Отправка информации о найденном пользователе"""
-    write_msg(user_id, " ".join(find_user_info()))
+    write_msg(user_id, " ".join(find_user_info(user_id)))
     send_photo(user_id, 'photo:')
-    update_viewed_users(find_user_info()[2])
+    insert_viewed_users(find_user_info(user_id)[2])
 
 
 
