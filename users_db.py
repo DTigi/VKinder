@@ -5,7 +5,7 @@ from config import DSN
 
 engine = sqlalchemy.create_engine(DSN)
 
-# создание таблиц с найденными пользователями и просмотренными пользователями
+# создание таблиц с просмотренными пользователями
 create_tables(engine)
 
 # сессия
