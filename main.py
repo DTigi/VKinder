@@ -1,4 +1,3 @@
-from pprint import pprint
 from random import randrange
 import datetime
 import requests
@@ -23,34 +22,40 @@ def write_msg(user_id, message):
 
 def get_profile_info(user_id):
     """Получение информации о пользователе, который написал боту"""
+    birthdate = sex = city_id = None
     url = 'https://api.vk.com/method/users.get'
     params = {'access_token': user_token,
               'user_ids': user_id,
               'fields': 'bdate, sex, city',
               'v': '5.131'
               }
+
     resp = requests.get(url, params=params)
     response = resp.json()
-    birthdate = response['response'][0]['bdate']
     try:
-        birthdate
+       response['response']
+    except KeyError:
+        write_msg(user_id, 'Проверь токен пользователя')
+
+    try:
+        birthdate = response['response'][0]['bdate']
     except KeyError:
         write_msg(user_id, 'Отсутствует информация о дате рождения, заполните профиль')
     birthyear = int(birthdate[-4:])
     year_now = int(datetime.date.today().year)
     target_age = year_now - birthyear
-    sex = response['response'][0]['sex']
+
     try:
-        sex
+        sex = response['response'][0]['sex']
     except KeyError:
         write_msg(user_id, 'Отсутствует пол, заполните профиль')
     if sex == 1:
         target_sex = 2
     else:
         target_sex = 1
-    city_id = response['response'][0]['city']['id']
+
     try:
-        city_id
+        city_id = response['response'][0]['city']['id']
     except KeyError:
         write_msg(user_id, 'Отсутствует информация о городе проживания, заполните профиль')
 
