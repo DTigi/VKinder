@@ -129,8 +129,6 @@ def get_photos_id(user_id):
     return list_of_ids
 
 
-print(get_photos_id("764540640"))
-
 def get_photo(user_id):
     """Получение остортированного списка ID фотографий"""
     list1 = get_photos_id(user_id)
