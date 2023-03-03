@@ -124,8 +124,12 @@ def get_photos_id(user_id):
             likes = i_likes.get('count')
             dict_photos[likes] = photo_id
     list_of_ids = sorted(dict_photos.items(), reverse=True)
+    if len(list_of_ids) < 3: # если меньше 3х фотографий, то дублируем
+        list_of_ids *= 3
     return list_of_ids
 
+
+print(get_photos_id("764540640"))
 
 def get_photo(user_id):
     """Получение остортированного списка ID фотографий"""
